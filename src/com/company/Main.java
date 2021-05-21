@@ -37,55 +37,6 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             e.printStackTrace();
         }
 
-        //文本处理一些异常情况 包括订单没有账号 或者错误的情况
-        try {
-            String encoding = "UTF-8";
-            File file = new File("D:\\server.txt");
-            if (file.isFile() && file.exists()) { //判断文件是否存在
-                InputStreamReader read = null;//考虑到编码格式
-                read = new InputStreamReader(
-                        new FileInputStream(file), encoding);
-                BufferedReader bufferedReader = new BufferedReader(read);
-                String lineTxt = bufferedReader.readLine();
-                DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-                while ((lineTxt = bufferedReader.readLine()) != null) {
-                    //  System.out.println(lineTxt);
-                    String[] data = lineTxt.split(",");
-                    User user = new User();
-                    user.setUser_name(data[0]);
-                    user.setUser_sell(data[1]);
-                    user.setRemark(data[2]);
-                    user.setDingding_expiryDate(df.parse(data[3]));
-                    user.setResult(data[6]);
-                    user.setDingdingId(data[7]);
-                    user.setResult("数据库未查到（文本）");
-                    boolean add = true;
-                    for (User ud : usersDingding)
-                        if(ud.getUser_name().equals(user.getUser_name())) {
-                            add =false;
-                            if(ud.getAccount()==null)
-                                ud.setRemark(user.getRemark());
-                            else {
-                                //钉钉的邮箱可能有错误 就从文本中来 但是必须申请的账号和真实相差不大
-                                String subAccount = ud.getAccount().substring(0,ud.getAccount().indexOf("@"));
-                                if(user.getAccount().contains(subAccount))
-                                    ud.setRemark(user.getRemark());
-                            }
-                            break;
-                        }
-                    if(add)usersDingding.add(user);
-                }
-                read.close();
-            }
-        }catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException ioException) {
-            ioException.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
         List<User> usersDingding2 = new ArrayList<User>();
         List<User> usersDingding5 =new ArrayList<User>();
         for(User u:usersDingding)
@@ -156,9 +107,9 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     ud.setResult("确认阶段账号，无法从钉钉获得账号");
                 }else if(ud.getAccount().equals(u.getAccount())){
                     if(sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(u.getExpiryDate())))
-                        ud.setResult("钉钉和数据库时间一致");
+                    {  ud.setResult("钉钉和数据库时间一致");ud.setExpiryDate(u.getExpiryDate());}
                     else
-                        ud.setResult("钉钉时间和数据库时间不相同");
+                    {    ud.setResult("钉钉时间和数据库时间不相同");ud.setExpiryDate(u.getExpiryDate());}
                 }
             }
         }
@@ -169,9 +120,11 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                 for (String account : ud.getAccountArray())
                     for (User ua : userDatebase)
                         if (account.equals(ua.getAccount())&&sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ua.getExpiryDate())))
-                            successNum++;
+                        { successNum++;}
+                        else
+                        {ud.setExpiryDate(ua.getExpiryDate());}
                 if (successNum == ud.getAccountArray().length)
-                    ud.setResult("钉钉和数据库时间一致");
+                { ud.setResult("钉钉和数据库时间一致");ud.setExpiryDate(ud.getDingding_expiryDate());}
                 else
                     ud.setResult("钉钉时间和数据库时间不相同");
             }

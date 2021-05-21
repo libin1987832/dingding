@@ -192,7 +192,7 @@ public class dingClient {
             if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status)&&result.equals("AGREE"))
                 type = 0;
             //文总审批了 我最后确认时间
-            if (sumoper>5&&"1542001861835468".equals(userid)&&"RUNNING".equals(status))
+            if (sumoper>4&&"1542001861835468".equals(userid)&&"RUNNING".equals(status))
                 type = 5;
             //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理
             if(type == 1||type ==2)
