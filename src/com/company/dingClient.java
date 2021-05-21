@@ -177,8 +177,25 @@ public class dingClient {
             String businessId = objsub.getString("business_id");
             List<JSONObject> objsublist = JSON.parseArray(objsub.getJSONArray("form_component_values").toJSONString(),JSONObject.class);
             List<JSONObject> operational = JSON.parseArray(objsub.getJSONArray("operation_records").toJSONString(),JSONObject.class);
+            int sumoper = operational.size();
+            String status = objsub.getString("status");
+            String userid = operational.get(sumoper-1).getString("userid");
+            String result = operational.get(sumoper-1).getString("operation_result");//.equals("AGREE");
+            int type = 0;
+            //单子玉洁处理完成
+            if (sumoper>1&&"195135213224684158".equals(userid)&&result.equals("AGREE")&&"RUNNING".equals(status))
+                type = 1;
+            //由于账号从备注没找到 我评论才找到  但是我还没同意
+            if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status))
+                type = 2;
+            //我已经同意了 但是这个单子还没给别人审批
+            if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status)&&result.equals("AGREE"))
+                type = 0;
+            //文总审批了 我最后确认时间
+            if (sumoper>5&&"1542001861835468".equals(userid)&&"RUNNING".equals(status))
+                type = 5;
             //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理
-            if(2==operational.size()&&operational.get(1).getString("operation_result").equals("AGREE"))
+            if(type == 1||type ==2)
             {
                 index_processNe3++;
                 User user=gerenateUser(objsublist,operational);
@@ -188,7 +205,7 @@ public class dingClient {
                 user.setResult("未在数据库找到（钉钉）");
                 users.add(user);
             }
-            else if(5==operational.size()&&operational.get(4).getString("operation_result").equals("AGREE"))
+            else if(type == 5)
             {
                 User user=gerenateUser(objsublist,operational);
                 user.setProcessId(l);
@@ -208,20 +225,27 @@ public class dingClient {
         String timestamp = String.valueOf(date.getTime());
         return Long.valueOf(timestamp);
     }
-    public List<User> parseAll(String token,int day) throws ApiException, ParseException {
+    //1 为更新 2其它为查询
+    public List<User> parseAll(String token,int day,int type) throws ApiException, ParseException {
         long curse = 0L;
         String sizelist = get_listId(token,curse,day);
         JSONObject object = JSONObject.parseObject(sizelist);
         JSONObject objsub = JSON.parseObject(object.getJSONObject("result").toJSONString());
-      //  List<User> listS = parse(token,objsub.getJSONArray("list").toJSONString());
-        List<User> listS = parseAllid(token,objsub.getJSONArray("list").toJSONString());
+        List<User> listS =null;
+        if(type == 1)
+        listS = parse(token,objsub.getJSONArray("list").toJSONString());
+        else
+        listS = parseAllid(token,objsub.getJSONArray("list").toJSONString());
         while(objsub.containsKey("next_cursor")) {
             curse = objsub.getLongValue("next_cursor");
             sizelist = get_listId(token,curse,day);
             object = JSONObject.parseObject(sizelist);
             objsub = JSON.parseObject(object.getJSONObject("result").toJSONString());
-        //    List<User> listT = parse(token,objsub.getJSONArray("list").toJSONString());
-            List<User> listT = parseAllid(token,objsub.getJSONArray("list").toJSONString());
+            List<User> listT = null;
+            if(type == 1)
+            listT = parse(token,objsub.getJSONArray("list").toJSONString());
+            else
+             listT = parseAllid(token,objsub.getJSONArray("list").toJSONString());
             listS.addAll(listT);
         }
         return listS;
@@ -231,7 +255,7 @@ public class dingClient {
         try {
             dingClient dC = new dingClient();
             String token = dC.get_access_token();
-            List<User> users = dC.parseAll(token,2);
+            List<User> users = dC.parseAll(token,2,2);
             users.forEach(System.out::println);
         } catch (ApiException | ParseException e) {
             e.printStackTrace();

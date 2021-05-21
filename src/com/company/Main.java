@@ -22,13 +22,14 @@ import java.util.List;
 
 public class Main {
 private final String head="客户名称，业务员，备注，钉钉时间，数据库时间，数据库账号，结果，钉钉编号";
+//处理要更新时间和我确认时间
     public static void myprocess()
     {
         List<User> usersDingding = null;
         try {
             dingClient dC = new dingClient();
             String token = dC.get_access_token();
-            usersDingding = dC.parseAll(token, 50);
+            usersDingding = dC.parseAll(token, 50,1);
             System.out.println("dingding token:"+token);//dingding token
         } catch (ParseException e) {
             e.printStackTrace();
@@ -182,13 +183,14 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
         for (User ud : usersDingding5)
             System.out.print(ud.toString());
     }
+    //汇总数据和对比数据库
     public static void allId()
     {
         List<User> usersDingding = null;
         try {
             dingClient dC = new dingClient();
             String token = dC.get_access_token();
-            usersDingding = dC.parseAll(token, 100);
+            usersDingding = dC.parseAll(token, 100,2);
             System.out.println("dingding token:"+token);//dingding token
         } catch (ParseException e) {
             e.printStackTrace();
@@ -267,8 +269,8 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
 
     }
     public static void main(String[] args) {
-        //myprocess();
-        allId();
+        myprocess();
+        //allId();
     }
 
 }
