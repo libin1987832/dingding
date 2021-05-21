@@ -176,14 +176,27 @@ public class User {
     @Override
     public String toString() {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        String outAccout = account;
+        /*if(account==null&&accountArray==null)
+        {
+            outAccout="只有广安的由于结尾不是@tv.ocm导致";
+        }else */
+        if(account==null&&accountArray.length>1)
+        {
+            outAccout="";
+            for(String s:accountArray)
+                outAccout=outAccout+" "+s;
+        }
         if(dingding_expiryDate!=null&&expiryDate!=null)
         {
             return  user_name +
                     "," + user_sell +
                     "," + remark+
+                    "," + df.format(dingding_joinDate) +
                     "," + df.format(dingding_expiryDate) +
+                    "," + df.format(joinDate) +
                     "," +  df.format(expiryDate) +
-                    "," + account +
+                    "," + outAccout +
                     "," + userId +
                     "," + result +","+dingdingId +","+processId +"\n";
         }
@@ -193,7 +206,7 @@ public class User {
                     "," + remark +
                     "," + df.format(dingding_expiryDate) +
                     "," + expiryDate +
-                    "," + account +
+                    "," + outAccout +
                    "," + userId +
                     "," + result +","+dingdingId +","+processId +"\n";
         }
@@ -202,9 +215,11 @@ public class User {
             return  user_name +
                     "," + user_sell +
                     "," + remark +
+                    "," + dingding_joinDate +
                     "," + dingding_expiryDate +
+                    "," + df.format(joinDate)+
                     "," +  df.format(expiryDate) +
-                    "," + account +
+                    "," + outAccout +
                         "," + userId +
                     "," + result +","+dingdingId +","+processId +"\n";
         }else return "";

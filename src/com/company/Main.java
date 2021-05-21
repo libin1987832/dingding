@@ -60,6 +60,7 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                 }else if(ud.getAccount().equals(u.getAccount())) {
                     ud.setUserId(u.getUserId());
                     ud.setExpiryDate(u.getExpiryDate());
+                    ud.setJoinDate(u.getJoinDate());
                     // System.out.println(u.getAccount()+" "+sdf.format(u.getExpiryDate())+" "+sdf.format(u.getJoinDate()));
                     if(sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ud.getExpiryDate())) ){
                         ud.setResult("已经在系统更新");
@@ -84,6 +85,7 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                             successNum++;
                             if (!sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ua.getExpiryDate()))) {
                                 boolean b = c.update_user(token, ua.getUserId(), ud.getDingding_expiryDate());
+                                ud.setJoinDate(ua.getJoinDate());
                                 if (!b) {
                                     successNum--;
                                 }
@@ -129,9 +131,11 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     ud.setResult("钉钉时间和数据库时间不相同");
             }
         }
+        if(usersDingding2.size()>0)
         System.out.println("更新账号");
         for (User ud : usersDingding2)
             System.out.print(ud.toString());
+        if(usersDingding5.size()>0)
         System.out.println("确定账号");
         for (User ud : usersDingding5)
             System.out.print(ud.toString());
@@ -165,39 +169,12 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                 }else if(ud.getAccount().equals(u.getAccount())) {
                     ud.setUserId(u.getUserId());
                     ud.setExpiryDate(u.getExpiryDate());
+                    ud.setJoinDate(u.getJoinDate());
                     // System.out.println(u.getAccount()+" "+sdf.format(u.getExpiryDate())+" "+sdf.format(u.getJoinDate()));
                     if(sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ud.getExpiryDate())) )
                         ud.setResult("时间一致");
                     else
                         ud.setResult("时间不一致");
-                }
-            }
-        }
-        //多个账号的情况
-        for (User ud : usersDingding) {
-            if (ud.getAccount()==null&&ud.getAccountArray() != null && ud.getAccountArray().length > 1) {
-                int successNum = 0;
-                for (String account : ud.getAccountArray()) {
-                    for (User ua : userDatebase) {
-             //           System.out.println(account);
-          //             System.out.println(ud);
-            //            System.out.println(ua);
-                        if (account.equals(ua.getAccount())) {
-                            successNum++;
-                            if (!sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ua.getExpiryDate()))) {
-                                boolean b = c.update_user(token, ua.getUserId(), ud.getDingding_expiryDate());
-                                if (!b) {
-                                    successNum--;
-                                }
-                            }
-                        }
-                    }
-                }
-                if (successNum == ud.getAccountArray().length) {
-                    ud.setResult("全部成功");
-                    ud.setExpiryDate(ud.getDingding_expiryDate());
-                } else {
-                    ud.setResult(Integer.toString(successNum) + "个成功");
                 }
             }
         }
@@ -209,11 +186,11 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                 for (String account : ud.getAccountArray())
                     for (User ua : userDatebase)
                         if (account.equals(ua.getAccount())&&sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ua.getExpiryDate())))
-                            successNum++;
+                        {successNum++;ud.setJoinDate(ua.getJoinDate());ud.setExpiryDate(ua.getExpiryDate());}
                 if (successNum == ud.getAccountArray().length)
-                    ud.setResult("时间一致");
+                { ud.setResult("时间一致");}
                 else
-                    ud.setResult("时间不一致，只存在"+successNum+"个");
+                {   ud.setResult("时间不一致，只存在"+successNum+"个");}
             }
         }
         System.out.println("所有账户情况：");

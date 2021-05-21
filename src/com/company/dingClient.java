@@ -110,6 +110,10 @@ public class dingClient {
                             remark = "第二个"+ opera.getString("remark");
                         }
                 }
+                if(user.getUser_name().equals("广安区融媒体中心"))
+                {
+                    user.setAccount("4001401298@qq.com");
+                }
                 if(remark!=null){
                     remark=remark.replaceAll("\n", " ").trim();
                     user.setRemark(remark);
