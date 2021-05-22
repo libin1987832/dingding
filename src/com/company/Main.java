@@ -65,12 +65,18 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     if(sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ud.getExpiryDate())) ){
                         ud.setResult("已经在系统更新");
                     }
-                    else {
+                    else if(ud.getDingding_expiryDate().compareTo(u.getExpiryDate())>0){//更新的时间应该比当前的结束时间后面，主要是续签的账号，失效日期一定要在前一个账号后面才行
                         boolean b = c.update_user(token, ud.getUserId(), ud.getDingding_expiryDate());
                         if (b) {
                             ud.setResult("更新成功");
                             ud.setExpiryDate(ud.getDingding_expiryDate());
                         }
+                        else{
+                            ud.setResult("更新不成功，可能是设置更新的时间少于当前七天后的时间");
+                        }
+                    }
+                    else {
+                        ud.setResult("更新的时间少于数据库失效时间，这种情况不合理（考虑续签的情况）");
                     }
                 }
             }
@@ -109,9 +115,9 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     ud.setResult("确认阶段账号，无法从钉钉获得账号");
                 }else if(ud.getAccount().equals(u.getAccount())){
                     if(sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(u.getExpiryDate())))
-                    {  ud.setResult("钉钉和数据库时间一致");ud.setExpiryDate(u.getExpiryDate());}
+                    {  ud.setResult("钉钉和数据库时间一致");ud.setExpiryDate(u.getExpiryDate());ud.setJoinDate(u.getJoinDate());}
                     else
-                    {    ud.setResult("钉钉时间和数据库时间不相同");ud.setExpiryDate(u.getExpiryDate());}
+                    {    ud.setResult("钉钉时间和数据库时间不相同");ud.setExpiryDate(u.getExpiryDate());ud.setJoinDate(u.getJoinDate());}
                 }
             }
         }
@@ -122,9 +128,9 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                 for (String account : ud.getAccountArray())
                     for (User ua : userDatebase)
                         if (account.equals(ua.getAccount())&&sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ua.getExpiryDate())))
-                        { successNum++;}
+                        { successNum++;ud.setJoinDate(ua.getJoinDate());}
                         else
-                        {ud.setExpiryDate(ua.getExpiryDate());}
+                        {ud.setExpiryDate(ua.getExpiryDate());ud.setJoinDate(ua.getJoinDate());}
                 if (successNum == ud.getAccountArray().length)
                 { ud.setResult("钉钉和数据库时间一致");ud.setExpiryDate(ud.getDingding_expiryDate());}
                 else
@@ -198,9 +204,64 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             System.out.print(ud.toString());
 
     }
+    public static void get_user_info()
+    {
+        JavaNetURLRESTFulClient c = new JavaNetURLRESTFulClient();
+        String token = c.get_token();
+        List<User> userDatebase = c.get_join_day(token,3);
+
+        List<User> usersDingding = null;
+        try {
+            dingClient dC = new dingClient();
+            token = dC.get_access_token();
+            usersDingding = dC.parseAll(token, 100,2);
+            System.out.println("dingding token:"+token);//dingding token
+        } catch (ParseException e) {
+            e.printStackTrace();
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+
+        List<User> oaSign=new ArrayList<>();
+        List<User> noaSign = new ArrayList<>();
+         for (User u:userDatebase)
+        {
+            boolean addflag = false;
+            for (User ud:usersDingding)
+            {
+                if(ud.getAccount()!=null&&u.getAccount().equals(ud.getAccount()))
+                {
+                    u.setDingding_joinDate(ud.getDingding_joinDate());
+                    u.setDingding_expiryDate(ud.getDingding_expiryDate());
+                    oaSign.add(u);
+                    addflag=true;
+                }
+                else if(ud.getAccountArray()!=null){
+                    for(String account:ud.getAccountArray())
+                        if(u.getAccount().equals(account))
+                        {
+                            u.setDingding_joinDate(ud.getDingding_joinDate());
+                            u.setDingding_expiryDate(ud.getDingding_expiryDate());
+                            oaSign.add(u);
+                            addflag=true;
+                            break;}
+                }
+                if(addflag)break;
+            }
+            if(!addflag)
+                noaSign.add(u);
+        }
+         System.out.println("在oA中有记录的账户：");
+        for (User ud : oaSign)
+            System.out.print(ud.toString());
+        System.out.println("在oA中没记录的账户：");
+        for (User ud : noaSign)
+            System.out.print(ud.toString());
+    }
     public static void main(String[] args) {
-        myprocess();
-        //allId();
+       // myprocess();
+       // allId();
+        get_user_info();
     }
 
 }

@@ -138,6 +138,15 @@ public class JavaNetURLRESTFulClient {
     public boolean update_user(String token, int userId, Date expiryDate)
     {
         try {
+            Date current7day = new Date((new Date()).getTime()+7*24*60*60*1000);
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");  //yyyy-MM-dd'T'HH:mm:ss.SSSZ
+            String  date = df.format(expiryDate);
+            // 确保跟新的时间至少在当前时间的七天以后
+            if(current7day.compareTo(expiryDate)<1)
+            {
+                System.out.println("跟新的时间少于七天后，更新失败！跟新的时间："+date);
+                return false;
+            }
 
             URL targetUrl = new URL(targetURL3);
 
@@ -146,8 +155,6 @@ public class JavaNetURLRESTFulClient {
             httpConnection.setRequestMethod("POST");
             httpConnection.setRequestProperty("Content-Type", "application/json");
 
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");  //yyyy-MM-dd'T'HH:mm:ss.SSSZ
-            String  date = df.format(expiryDate);
             String input3 =  "{\"funCode\":\"QB601013\",\"prodCode\":\"SM01\",\"token\":\""+token+"\",\"args\":{\"userId\":"+Integer.toString(userId)+",\"addRemTime\":null,\"expiryDate\":\""+date.substring(0,23)+"Z\"}}";
             //System.out.println(input3);
             OutputStream outputStream = httpConnection.getOutputStream();
@@ -186,8 +193,26 @@ public class JavaNetURLRESTFulClient {
         }
         return false;
     }
+    public List<User> get_join_day(String token,int day)
+    {
+        List<User> user= get_user(token);
+        Date currentday = new Date((new Date()).getTime()-day*24*60*60*1000);
+        List<User> userd=new ArrayList<>();
+        for (User u:user)
+        {
+            if(currentday.compareTo(u.getJoinDate())<0)
+            {
+                userd.add(u);
+            }
+        }
+        return userd;
+    }
     public static void main(String[] args) throws ParseException {
-        JavaNetURLRESTFulClient c= new JavaNetURLRESTFulClient();
+        Date current= new Date();
+        Date current7day = new Date((new Date()).getTime()+7*24*60*60*1000);
+        System.out.print(current7day.compareTo(current));
+        System.out.print(current7day);
+  /*      JavaNetURLRESTFulClient c= new JavaNetURLRESTFulClient();
         String token = c.get_token();
         List<User> user= c.get_user(token);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -202,7 +227,7 @@ public class JavaNetURLRESTFulClient {
                 else
                     System.out.println("fail");
             }
-        }
+        }*/
 
     }
 }
