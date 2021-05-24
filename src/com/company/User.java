@@ -48,6 +48,8 @@ public class User {
         stringremark=stringremark.replace("，","");
         stringremark=stringremark.replace(":","");
         stringremark=stringremark.replace(":","");
+        stringremark=stringremark.replace("（","");
+        stringremark=stringremark.replace("）","");
         String[] remarkArray=stringremark.split(" ");
         List<String> accountList = new ArrayList<String>();
         for(String re:remarkArray) {

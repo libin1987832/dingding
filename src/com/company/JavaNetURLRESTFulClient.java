@@ -138,11 +138,11 @@ public class JavaNetURLRESTFulClient {
     public boolean update_user(String token, int userId, Date expiryDate)
     {
         try {
-            Date current7day = new Date((new Date()).getTime()+7*24*60*60*1000);
+            Date current7day = new Date((new Date()).getTime()+7*24*60*60*1000L);
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");  //yyyy-MM-dd'T'HH:mm:ss.SSSZ
             String  date = df.format(expiryDate);
             // 确保跟新的时间至少在当前时间的七天以后
-            if(current7day.compareTo(expiryDate)<1)
+            if(current7day.compareTo(expiryDate)>0)
             {
                 System.out.println("跟新的时间少于七天后，更新失败！跟新的时间："+date);
                 return false;
@@ -193,10 +193,10 @@ public class JavaNetURLRESTFulClient {
         }
         return false;
     }
-    public List<User> get_join_day(String token,int day)
+    public List<User> get_join_day(String token,long day)
     {
         List<User> user= get_user(token);
-        Date currentday = new Date((new Date()).getTime()-day*24*60*60*1000);
+        Date currentday = new Date((new Date()).getTime()-day*24*60*60*1000L);
         List<User> userd=new ArrayList<>();
         for (User u:user)
         {

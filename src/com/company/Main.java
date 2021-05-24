@@ -29,7 +29,8 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
         try {
             dingClient dC = new dingClient();
             String token = dC.get_access_token();
-            usersDingding = dC.parseAll(token, 50,1);
+            //type 1 表示我要处理的单子 其它是完成的单子
+            usersDingding = dC.parseAll(token, 3,1);
             System.out.println("dingding token:"+token);//dingding token
         } catch (ParseException e) {
             e.printStackTrace();
@@ -76,11 +77,12 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                         }
                     }
                     else {
-                        ud.setResult("更新的时间少于数据库失效时间，这种情况不合理（考虑续签的情况）");
+                        ud.setResult("更新的时间少于数据库失效时间，这种情况不合理（考虑续签的单子第一次时间）");
                     }
                 }
             }
         }
+        int updateNum = 0;
         //多个账号的情况
         for (User ud : usersDingding2) {
             if (ud.getAccount()==null&&ud.getAccountArray() != null && ud.getAccountArray().length > 1) {
@@ -89,9 +91,10 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     for (User ua : userDatebase) {
                         if (account.equals(ua.getAccount())) {
                             successNum++;
+                            ud.setJoinDate(ua.getJoinDate());
                             if (!sdf.format(ud.getDingding_expiryDate()).equals(sdf.format(ua.getExpiryDate()))) {
                                 boolean b = c.update_user(token, ua.getUserId(), ud.getDingding_expiryDate());
-                                ud.setJoinDate(ua.getJoinDate());
+                                updateNum++;
                                 if (!b) {
                                     successNum--;
                                 }
@@ -100,7 +103,7 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     }
                 }
                 if (successNum == ud.getAccountArray().length) {
-                    ud.setResult("全部成功");
+                    ud.setResult("全部成功,本次运行更新"+updateNum+"个客户！");
                     ud.setExpiryDate(ud.getDingding_expiryDate());
                 } else {
                     ud.setResult(Integer.toString(successNum) + "个成功");
@@ -208,13 +211,13 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
     {
         JavaNetURLRESTFulClient c = new JavaNetURLRESTFulClient();
         String token = c.get_token();
-        List<User> userDatebase = c.get_join_day(token,3);
+        List<User> userDatebase = c.get_join_day(token,200L);
 
         List<User> usersDingding = null;
         try {
             dingClient dC = new dingClient();
             token = dC.get_access_token();
-            usersDingding = dC.parseAll(token, 100,2);
+            usersDingding = dC.parseAll(token, 100L,2);
             System.out.println("dingding token:"+token);//dingding token
         } catch (ParseException e) {
             e.printStackTrace();
@@ -231,6 +234,9 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             {
                 if(ud.getAccount()!=null&&u.getAccount().equals(ud.getAccount()))
                 {
+                    u.setUser_name(ud.getUser_name());
+                    u.setUser_sell(ud.getUser_sell());
+                    u.setRemark(ud.getRemark());
                     u.setDingding_joinDate(ud.getDingding_joinDate());
                     u.setDingding_expiryDate(ud.getDingding_expiryDate());
                     oaSign.add(u);
@@ -240,6 +246,9 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
                     for(String account:ud.getAccountArray())
                         if(u.getAccount().equals(account))
                         {
+                            u.setUser_name(ud.getUser_name());
+                            u.setUser_sell(ud.getUser_sell());
+                            u.setRemark(ud.getRemark());
                             u.setDingding_joinDate(ud.getDingding_joinDate());
                             u.setDingding_expiryDate(ud.getDingding_expiryDate());
                             oaSign.add(u);
@@ -259,9 +268,9 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             System.out.print(ud.toString());
     }
     public static void main(String[] args) {
-       // myprocess();
+        myprocess();
        // allId();
-        get_user_info();
+       // get_user_info();
     }
 
 }

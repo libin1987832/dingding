@@ -35,7 +35,7 @@ public class dingClient {
         String token=object.getString("access_token");
         return token;
     }
-    public String get_listId(String token,long curse,int day) throws ApiException {
+    public String get_listId(String token,long curse,long day) throws ApiException {
         DingTalkClient client = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/processinstance/listids");
         OapiProcessinstanceListidsRequest req = new OapiProcessinstanceListidsRequest();
         req.setProcessCode("PROC-30076949-A6F9-401B-A04C-AFF305AC4EE0");
@@ -100,6 +100,8 @@ public class dingClient {
                             String myremark = jo.getString("remark");
                             if(myremark!=null&&myremark.contains("@tv.com"))
                                 remark = "我的" + myremark;
+                            if(myremark.contains("@qq.com"))
+                                user.setAccount(myremark);
                         }
                     }
                 }
@@ -230,7 +232,7 @@ public class dingClient {
         return Long.valueOf(timestamp);
     }
     //1 为更新 2其它为查询
-    public List<User> parseAll(String token,int day,int type) throws ApiException, ParseException {
+    public List<User> parseAll(String token,long day,int type) throws ApiException, ParseException {
         long curse = 0L;
         String sizelist = get_listId(token,curse,day);
         JSONObject object = JSONObject.parseObject(sizelist);
