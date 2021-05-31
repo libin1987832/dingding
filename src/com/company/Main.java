@@ -30,7 +30,7 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             dingClient dC = new dingClient();
             String token = dC.get_access_token();
             //type 1 表示我要处理的单子 其它是完成的单子
-            usersDingding = dC.parseAll(token, 3,1);
+            usersDingding = dC.parseAll(token, 5,1);
             System.out.println("dingding token:"+token);//dingding token
         } catch (ParseException e) {
             e.printStackTrace();
@@ -207,7 +207,7 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             System.out.print(ud.toString());
 
     }
-    public static void get_user_info()
+    public static void get_user_info(int type,long day)
     {
         JavaNetURLRESTFulClient c = new JavaNetURLRESTFulClient();
         String token = c.get_token();
@@ -217,7 +217,7 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
         try {
             dingClient dC = new dingClient();
             token = dC.get_access_token();
-            usersDingding = dC.parseAll(token, 100L,2);
+            usersDingding = dC.parseAll(token, 100L,type);
             System.out.println("dingding token:"+token);//dingding token
         } catch (ParseException e) {
             e.printStackTrace();
@@ -260,17 +260,34 @@ private final String head="客户名称，业务员，备注，钉钉时间，�
             if(!addflag)
                 noaSign.add(u);
         }
+
+
          System.out.println("在oA中有记录的账户：");
+         Date date = new Date((new Date()).getTime()-day*24*60*60*1000L);
         for (User ud : oaSign)
+        {
+            if(date.compareTo(ud.getJoinDate())<0)
             System.out.print(ud.toString());
+        }
+
         System.out.println("在oA中没记录的账户：");
         for (User ud : noaSign)
-            System.out.print(ud.toString());
+        {
+            if(ud.getAccount().equals("yujie@yujie.com"))//玉洁账户
+                continue;
+            if(ud.getAccount().equals("9287235436@qq.com"))//文静账户
+                continue;
+            if(date.compareTo(ud.getJoinDate())<0)
+               System.out.println(ud.getAccount());
+        }
+
     }
+
     public static void main(String[] args) {
-        myprocess();
+        //myprocess();
        // allId();
        // get_user_info();
+        get_user_info(3,1L);
     }
 
 }

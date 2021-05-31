@@ -84,7 +84,9 @@ public class dingClient {
             {
                 //    System.out.println("备注"+j.getString("value"));
                 String remark = j.getString("value");
-                //如果已经提交成功，就从最后评论中取得账号
+                if(remark!=null&&remark.equals("null"))
+                    remark=null;
+                //如果已经提交成功，就从最后评论中取得账号  或者remark 是错误的
                 int sum=operational.size();
                 if(sum>2) {
                     String myremark = operational.get(sum-1).getString("remark");
@@ -100,7 +102,7 @@ public class dingClient {
                             String myremark = jo.getString("remark");
                             if(myremark!=null&&myremark.contains("@tv.com"))
                                 remark = "我的" + myremark;
-                            if(myremark.contains("@qq.com"))
+                            if(myremark!=null&&myremark.contains("@qq.com"))
                                 user.setAccount(myremark);
                         }
                     }
@@ -109,9 +111,19 @@ public class dingClient {
                 if(remark==null||!remark.contains("@tv.com")) {
                         if(operational.size()>1) {
                             JSONObject opera = operational.get(1);
-                            remark = "第二个"+ opera.getString("remark");
+                            String myremark=opera.getString("remark");
+                            if(myremark!=null&&myremark.contains("@tv.com"))
+                                remark = "第二个位置"+myremark;
+                            // 在评论中
+                           if(remark == null&&operational.size()>2){
+                                opera = operational.get(2);
+                                myremark=opera.getString("remark");
+                               if(myremark!=null&&myremark.contains("@tv.com"))
+                                   remark = "第三个位置"+myremark;
+                            }
                         }
                 }
+
                 if(user.getUser_name().equals("广安区融媒体中心"))
                 {
                     user.setAccount("4001401298@qq.com");
@@ -119,11 +131,58 @@ public class dingClient {
                 if(remark!=null){
                     remark=remark.replaceAll("\n", " ").trim();
                     user.setRemark(remark);
-                }
+                }else
+                    user.setRemark("没有取到有效的值");
             }
         }
 
         return user;
+    }
+
+    public List<User> parseAllRunning(String token,String jsonString) throws ApiException, ParseException{
+        List<String> listS = JSON.parseArray(jsonString,String.class);
+        DingTalkClient client2 = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/processinstance/get");
+        OapiProcessinstanceGetRequest req2 = new OapiProcessinstanceGetRequest();
+        List<User> users = new ArrayList<User>();
+        System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
+        int index_processNe3=0;
+        for(String l:listS)
+        {
+            // System.out.println(l);//实例的id 可以提供给APIexplorer
+            req2.setProcessInstanceId(l);
+            OapiProcessinstanceGetResponse rsp2 = client2.execute(req2, token);
+            String jsonString2 =rsp2.getBody();
+            JSONObject object = JSONObject.parseObject(jsonString2);
+            // System.out.println(jsonString);
+            JSONObject objsub = JSON.parseObject(object.getJSONObject("process_instance").toJSONString());
+            String businessId = objsub.getString("business_id");
+            List<JSONObject> objsublist = JSON.parseArray(objsub.getJSONArray("form_component_values").toJSONString(),JSONObject.class);
+            List<JSONObject> operational = JSON.parseArray(objsub.getJSONArray("operation_records").toJSONString(),JSONObject.class);
+            String status=objsub.getString("status");
+            //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理
+            if(6<operational.size()&&status.equals("COMPLETED"))
+            {
+                index_processNe3++;
+                User user=gerenateUser(objsublist,operational);
+                user.setProcessId(l);
+                user.setDingdingId(businessId);
+                user.setStatus("2");
+                user.setResult("未在数据库找到（钉钉）");
+                users.add(user);
+            }
+            if(2<operational.size()&&status.equals("RUNNING"))
+            {
+                index_processNe3++;
+                User user=gerenateUser(objsublist,operational);
+                user.setProcessId(l);
+                user.setDingdingId(businessId);
+                user.setStatus("3");
+                user.setResult("未在数据库找到（钉钉）");
+                users.add(user);
+            }
+        }
+        System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
+        return users;
     }
 
     public List<User> parseAllid(String token,String jsonString) throws ApiException, ParseException{
@@ -186,7 +245,9 @@ public class dingClient {
             int sumoper = operational.size();
             String status = objsub.getString("status");
             String userid = operational.get(sumoper-1).getString("userid");
-            String result = operational.get(sumoper-1).getString("operation_result");//.equals("AGREE");
+            String result = null;
+            if(sumoper>1)
+                result = operational.get(1).getString("operation_result");//.equals("AGREE"); 玉洁可能添加评论 导致同意的单子会在2个位置
             int type = 0;
             //单子玉洁处理完成
             if (sumoper>1&&"195135213224684158".equals(userid)&&result.equals("AGREE")&&"RUNNING".equals(status))
@@ -238,10 +299,13 @@ public class dingClient {
         JSONObject object = JSONObject.parseObject(sizelist);
         JSONObject objsub = JSON.parseObject(object.getJSONObject("result").toJSONString());
         List<User> listS =null;
-        if(type == 1)
-        listS = parse(token,objsub.getJSONArray("list").toJSONString());
-        else
-        listS = parseAllid(token,objsub.getJSONArray("list").toJSONString());
+        switch(type){
+            case 1:listS = parse(token,objsub.getJSONArray("list").toJSONString());break;
+            case 2:listS = parseAllid(token,objsub.getJSONArray("list").toJSONString());break;
+            case 3:listS = parseAllRunning(token,objsub.getJSONArray("list").toJSONString());break;
+        }
+
+
         while(objsub.containsKey("next_cursor")) {
             curse = objsub.getLongValue("next_cursor");
             sizelist = get_listId(token,curse,day);

@@ -23,6 +23,7 @@ public class JavaNetURLRESTFulClient {
     private static final String targetURL1 = "http://ent.qbaidata.com/sladmin/service/QB101001";
     private static final String targetURL2 = "http://ent.qbaidata.com/sladmin/service/QB601012";
     private static final String targetURL3 = "http://ent.qbaidata.com/sladmin/service/QB601013";
+    private static final String targetURL4 = "http://ent.qbaidata.com/sladmin/service/QB601014";
     public String get_token()
     {
         try {
@@ -173,6 +174,55 @@ public class JavaNetURLRESTFulClient {
          //   System.out.println("Output from Server:\n");
             while ((output = responseBuffer.readLine()) != null) {
            //    System.out.println(output);
+                JSONObject object = JSONObject.parseObject(output);
+                String m=object.getString("message");
+                if("Succeed".equals(m))
+                    return true;
+                else
+                    return false;
+            }
+
+            httpConnection.disconnect();
+        } catch (MalformedURLException e) {
+
+            e.printStackTrace();
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+
+        }
+        return false;
+    }
+    public boolean delete_user(String token, int userId)
+    {
+        try {
+            URL targetUrl = new URL(targetURL4);
+
+            HttpURLConnection httpConnection = (HttpURLConnection) targetUrl.openConnection();
+            httpConnection.setDoOutput(true);
+            httpConnection.setRequestMethod("POST");
+            httpConnection.setRequestProperty("Content-Type", "application/json");
+            int[] user=new int[16];
+            user[0]=userId;
+            String input3 =  "{\"funCode\":\"QB601014\",\"prodCode\":\"SM01\",\"token\":\""+token+"\",\"args\":{\"userIds\":"+user.toString()+",\"addRemTime\":null,\"expiryDate\":null,isDel:true}}";
+            //System.out.println(input3);
+            OutputStream outputStream = httpConnection.getOutputStream();
+            outputStream.write(input3.getBytes());
+            outputStream.flush();
+
+            if (httpConnection.getResponseCode() != 200) {
+                throw new RuntimeException("Failed : HTTP error code : "
+                        + httpConnection.getResponseCode());
+            }
+
+            BufferedReader responseBuffer = new BufferedReader(new InputStreamReader(
+                    (httpConnection.getInputStream())));
+
+            String output;
+            //   System.out.println("Output from Server:\n");
+            while ((output = responseBuffer.readLine()) != null) {
+                //    System.out.println(output);
                 JSONObject object = JSONObject.parseObject(output);
                 String m=object.getString("message");
                 if("Succeed".equals(m))
