@@ -48,6 +48,7 @@ public class User {
         stringremark=stringremark.replace("，","");
         stringremark=stringremark.replace(":","");
         stringremark=stringremark.replace(":","");
+        stringremark=stringremark.replace("：","");
         stringremark=stringremark.replace("（","");
         stringremark=stringremark.replace("）","");
         String[] remarkArray=stringremark.split(" ");

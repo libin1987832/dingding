@@ -194,7 +194,7 @@ public class JavaNetURLRESTFulClient {
         }
         return false;
     }
-    public boolean delete_user(String token, int userId)
+    public boolean delete_user(String token, int[] userId)
     {
         try {
             URL targetUrl = new URL(targetURL4);
@@ -203,9 +203,11 @@ public class JavaNetURLRESTFulClient {
             httpConnection.setDoOutput(true);
             httpConnection.setRequestMethod("POST");
             httpConnection.setRequestProperty("Content-Type", "application/json");
-            int[] user=new int[16];
-            user[0]=userId;
-            String input3 =  "{\"funCode\":\"QB601014\",\"prodCode\":\"SM01\",\"token\":\""+token+"\",\"args\":{\"userIds\":"+user.toString()+",\"addRemTime\":null,\"expiryDate\":null,isDel:true}}";
+           String userStr=Integer.toString(userId[0]);
+           if(userId.length>1)
+               for(int i=1;i<userId.length;i++)
+                   userStr=userStr+","+Integer.toString(userId[i]);
+            String input3 =  "{\"funCode\":\"QB601014\",\"prodCode\":\"SM01\",\"token\":\""+token+"\",\"args\":{\"userIds\":["+userStr+"],\"addRemTime\":null,\"expiryDate\":null,isDel:true}}";
             //System.out.println(input3);
             OutputStream outputStream = httpConnection.getOutputStream();
             outputStream.write(input3.getBytes());
@@ -225,6 +227,7 @@ public class JavaNetURLRESTFulClient {
                 //    System.out.println(output);
                 JSONObject object = JSONObject.parseObject(output);
                 String m=object.getString("message");
+                System.out.println(m);
                 if("Succeed".equals(m))
                     return true;
                 else

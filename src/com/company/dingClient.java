@@ -220,6 +220,11 @@ public class dingClient {
         System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
         return users;
     }
+    public User modified_time(User u,String time) throws ParseException {
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        u.setDingding_expiryDate(df.parse(time));
+        return u;
+    }
     public List<User> parse(String token,String jsonString) throws ApiException, ParseException {
      //   JSONObject object = JSONObject.parseObject(jsonString);
    //     JSONObject objsub = JSON.parseObject(object.getJSONObject("result").toJSONString());
@@ -245,6 +250,7 @@ public class dingClient {
             int sumoper = operational.size();
             String status = objsub.getString("status");
             String userid = operational.get(sumoper-1).getString("userid");
+            String remark = operational.get(sumoper-1).getString("operation_type");
             String result = null;
             if(sumoper>1)
                 result = operational.get(1).getString("operation_result");//.equals("AGREE"); 玉洁可能添加评论 导致同意的单子会在2个位置
@@ -255,12 +261,31 @@ public class dingClient {
             //由于账号从备注没找到 我评论才找到  但是我还没同意
             if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status))
                 type = 2;
-            //我已经同意了 但是这个单子还没给别人审批
-            if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status)&&result.equals("AGREE"))
+            //我已经同意了 但是这个单子还没给别人审批 最后不能是评论 最后是评论很有可能是我为了加入账号  这种应该是要处理的
+            if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status)&&result.equals("AGREE")&&!"ADD_REMARK".equals(remark))
                 type = 0;
             //文总审批了 我最后确认时间
             if (sumoper>4&&"1542001861835468".equals(userid)&&"RUNNING".equals(status))
                 type = 5;
+            //部分客户可能会需要延长时间，业务员直接在单子给出来
+            String remarkdetails = "";
+            if (sumoper>1&&"0466311823845822".equals(userid)&&"ADD_REMARK".equals(remark))
+            {
+                remarkdetails = operational.get(sumoper-1).getString("remark");
+
+                if(remarkdetails.contains("extend:"))
+                    type = 6;//需要延长的
+                else if(operational.get(sumoper-2).getString("remark").contains("extend:")) {
+                    remarkdetails = operational.get(sumoper - 2).getString("remark");
+                    type = 6;//需要延长的
+                    //最后一个可能是账号因此不能用 还存在两个extend 因为前面一个是错误的
+                }
+                else
+                    type = 7;//需要注意最后一个评论的是不是账号问题 不含extend
+            }else if (sumoper>1&&!"01194714452436466669".equals(userid)&&"COMPLETED".equals(status))//最后一个不是文总评论也不是我评论的就需要单独拉出来注意一下
+            {
+                    type = 8;
+            }
             //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理
             if(type == 1||type ==2)
             {
@@ -279,6 +304,25 @@ public class dingClient {
                 user.setDingdingId(businessId);
                 user.setStatus("5");
                 user.setResult("未在数据库找到（钉钉）");
+                users.add(user);
+            }
+            else if(type==6)
+            {
+                User user=gerenateUser(objsublist,operational);
+                user.setProcessId(l);
+                user.setDingdingId(businessId);
+                user.setStatus("6");
+                user.setResult("有延长时间要求");
+                user=modified_time(user,remarkdetails.substring(7).trim());
+                users.add(user);
+            }
+            else if(type==8)
+            {
+                User user=gerenateUser(objsublist,operational);
+                user.setProcessId(l);
+                user.setDingdingId(businessId);
+                user.setStatus("8");
+                user.setResult("有延长时间要求,但是我还没有确认");
                 users.add(user);
             }
         }
