@@ -37,6 +37,15 @@ public class User {
     private String user_sell;
     private Date expiryDate;
 
+    public String getLast_remark() {
+        return last_remark;
+    }
+
+    public void setLast_remark(String last_remark) {
+        this.last_remark = last_remark;
+    }
+
+    private String last_remark;
     public String getRemark() {
         return remark;
     }
@@ -51,6 +60,7 @@ public class User {
         stringremark=stringremark.replace("：","");
         stringremark=stringremark.replace("（","");
         stringremark=stringremark.replace("）","");
+        stringremark=stringremark.replace("\n"," ");
         String[] remarkArray=stringremark.split(" ");
         List<String> accountList = new ArrayList<String>();
         for(String re:remarkArray) {
@@ -176,6 +186,61 @@ public class User {
     }
 
     private String status;
+
+    public int getCountNum() {
+        return countNum;
+    }
+
+    public void setCountNum(int countNum) {
+        this.countNum = countNum;
+    }
+
+    private int countNum=0;
+    public Date getLastLogin() {
+        return lastLogin;
+    }
+
+    public void setLastLogin(Date lastLogin) {
+        this.lastLogin = lastLogin;
+    }
+
+    private Date lastLogin;
+    public boolean accountEqual(String str)
+    {
+        if(this.getAccount()!=null&&this.getAccount().equals(str))
+            return true;
+        if(this.accountArray!=null) {
+            for (String s : accountArray)
+                if (s.equals(str))
+                    return true;
+        }
+        return false;
+    }
+    public String accountToString()
+    {
+        String st="";
+        if(this.account==null)
+        {
+            if(this.accountArray==null)
+                return "account error";
+            for(String s:this.accountArray)
+                st=st+":"+s;
+            st=st.substring(1);
+        }
+        else
+            st=this.account;
+        return st;
+    }
+
+    public String getCounnt_time() {
+        return counnt_time;
+    }
+
+    public void setCounnt_time(String counnt_time) {
+        this.counnt_time = counnt_time;
+    }
+
+    String counnt_time="900";
     @Override
     public String toString() {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
@@ -184,17 +249,22 @@ public class User {
         {
             outAccout="只有广安的由于结尾不是@tv.ocm导致";
         }else */
-        if(account==null&&accountArray.length>1)
+        try {
+            if (account == null && accountArray.length > 1) {
+                outAccout = "";
+                for (String s : accountArray)
+                    outAccout = outAccout + " " + s;
+            }
+        }catch(java.lang.NullPointerException e)
         {
-            outAccout="";
-            for(String s:accountArray)
-                outAccout=outAccout+" "+s;
+            System.out.println("这个用户无法在钉钉单子中找到账号，可能需要手工在最后评论中添加:"+user_name);
         }
         if(dingding_expiryDate!=null&&expiryDate!=null)
         {
             return  user_name +
                     "," + user_sell +
                     "," + remark+
+                    "," +last_remark+
                     "," + df.format(dingding_joinDate) +
                     "," + df.format(dingding_expiryDate) +
                     "," + df.format(joinDate) +
@@ -207,6 +277,7 @@ public class User {
             return  user_name +
                     "," + user_sell +
                     "," + remark +
+                    "," +last_remark+
                     "," + df.format(dingding_expiryDate) +
                     "," + expiryDate +
                     "," + outAccout +
@@ -218,6 +289,7 @@ public class User {
             return  user_name +
                     "," + user_sell +
                     "," + remark +
+                    "," +last_remark+
                     "," + dingding_joinDate +
                     "," + dingding_expiryDate +
                     "," + df.format(joinDate)+

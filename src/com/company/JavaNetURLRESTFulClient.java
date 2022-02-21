@@ -18,18 +18,30 @@ import java.util.List;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+
 public class JavaNetURLRESTFulClient {
 
-    private static final String targetURL1 = "http://ent.qbaidata.com/sladmin/service/QB101001";
-    private static final String targetURL2 = "http://ent.qbaidata.com/sladmin/service/QB601012";
-    private static final String targetURL3 = "http://ent.qbaidata.com/sladmin/service/QB601013";
-    private static final String targetURL4 = "http://ent.qbaidata.com/sladmin/service/QB601014";
+
+
+    private static final String targetURL1s = "https://ent.qbaidata.com/sladmin/service/QB101001";
+    private static final String targetURL2s = "https://ent.qbaidata.com/sladmin/service/QB601012";
+    private static final String targetURL3s = "https://ent.qbaidata.com/sladmin/service/QB601013";
+    private static final String targetURL4s = "https://ent.qbaidata.com/sladmin/service/QB601014";
+
+    private static final String targetURL1 = "http://ent.qbaidata.com:3600/sladmin/service/QB101001";
+    private static final String targetURL2 = "http://ent.qbaidata.com:3600/sladmin/service/QB601012";
+    private static final String targetURL3 = "http://ent.qbaidata.com:3600/sladmin/service/QB601013";
+    private static final String targetURL4 = "http://ent.qbaidata.com:3600/sladmin/service/QB601014";
     public String get_token()
     {
         try {
-
             URL targetUrl = new URL(targetURL1);
-
+            // SslUtils.ignoreSsl();
+            //HttpsURLConnection httpConnection = (HttpsURLConnection) targetUrl.openConnection();
             HttpURLConnection httpConnection = (HttpURLConnection) targetUrl.openConnection();
             httpConnection.setDoOutput(true);
             httpConnection.setRequestMethod("POST");
@@ -69,6 +81,8 @@ public class JavaNetURLRESTFulClient {
 
             e.printStackTrace();
 
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -78,7 +92,8 @@ public class JavaNetURLRESTFulClient {
         try {
 
             URL targetUrl = new URL(targetURL2);
-
+            //SslUtils.ignoreSsl();
+            //HttpsURLConnection httpConnection = (HttpsURLConnection) targetUrl.openConnection();
             HttpURLConnection httpConnection = (HttpURLConnection) targetUrl.openConnection();
             httpConnection.setDoOutput(true);
             httpConnection.setRequestMethod("POST");
@@ -98,13 +113,14 @@ public class JavaNetURLRESTFulClient {
                     (httpConnection.getInputStream())));
 
             String output;
-           // System.out.println("Output from Server:\n");
+          // System.out.println("Output from Server:\n");
             List<User> users = new ArrayList<User>();
             while ((output = responseBuffer.readLine()) != null) {
-              //  System.out.println(output);
+              // System.out.println(output);
                 JSONObject object = JSONObject.parseObject(output);
+                object.getJSONArray("data").toJSONString();
                 List<JSONObject> objsublist = JSON.parseArray(object.getJSONArray("data").toJSONString(),JSONObject.class);
-                System.out.println("数据库包含用户数:"+Integer.toString(objsublist.size()));
+             //   System.out.println("数据库包含用户数:"+Integer.toString(objsublist.size()));
                 for(JSONObject j:objsublist)
                 {
                     User user = new User();
@@ -112,10 +128,12 @@ public class JavaNetURLRESTFulClient {
                     int userId = j.getInteger("uuid");
                     Date expiryDate = j.getDate("expiryDate");
                     Date joinDate = j.getDate("joinDate");
+                    int remtime = j.getInteger("func3RemTime");
                     user.setAccount(account);
                     user.setUserId(userId);
                     user.setExpiryDate(expiryDate);
                     user.setJoinDate(joinDate);
+                    user.setCounnt_time(Integer.toString(remtime/1000));
                     user.setResult("数据在数据库,未在钉钉");
                     if(account!=null&&!account.trim().equals(""))
                         users.add(user);
@@ -133,6 +151,8 @@ public class JavaNetURLRESTFulClient {
 
             e.printStackTrace();
 
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -145,12 +165,13 @@ public class JavaNetURLRESTFulClient {
             // 确保跟新的时间至少在当前时间的七天以后
             if(current7day.compareTo(expiryDate)>0)
             {
-                System.out.println("跟新的时间少于七天后，更新失败！跟新的时间："+date);
+                System.out.println("账户："+Integer.toString(userId)+"跟新的时间少于七天后，更新失败！跟新的时间："+date);
                 return false;
             }
 
             URL targetUrl = new URL(targetURL3);
-
+        //    SslUtils.ignoreSsl();
+        //    HttpsURLConnection httpConnection = (HttpsURLConnection) targetUrl.openConnection();
             HttpURLConnection httpConnection = (HttpURLConnection) targetUrl.openConnection();
             httpConnection.setDoOutput(true);
             httpConnection.setRequestMethod("POST");
@@ -163,6 +184,7 @@ public class JavaNetURLRESTFulClient {
             outputStream.flush();
 
             if (httpConnection.getResponseCode() != 200) {
+                System.out.println("跟新成功："+Integer.toString(userId)+"，服务器失败返回不是200");
                 throw new RuntimeException("Failed : HTTP error code : "
                         + httpConnection.getResponseCode());
             }
@@ -176,10 +198,19 @@ public class JavaNetURLRESTFulClient {
            //    System.out.println(output);
                 JSONObject object = JSONObject.parseObject(output);
                 String m=object.getString("message");
-                if("Succeed".equals(m))
+
+                if("Succeed".equals(m)) {
+                    System.out.println("********************************************");
+                    System.out.println("跟新成功："+Integer.toString(userId)+"成功");
+                    System.out.println("********************************************");
                     return true;
-                else
+                }
+                else {
+                    System.out.println("********************************************");
+                    System.out.println("跟新成功："+Integer.toString(userId)+"失败");
+                    System.out.println("********************************************");
                     return false;
+                }
             }
 
             httpConnection.disconnect();
@@ -191,6 +222,8 @@ public class JavaNetURLRESTFulClient {
 
             e.printStackTrace();
 
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return false;
     }
@@ -198,7 +231,8 @@ public class JavaNetURLRESTFulClient {
     {
         try {
             URL targetUrl = new URL(targetURL4);
-
+           // SslUtils.ignoreSsl();
+            //HttpsURLConnection httpConnection = (HttpsURLConnection) targetUrl.openConnection();
             HttpURLConnection httpConnection = (HttpURLConnection) targetUrl.openConnection();
             httpConnection.setDoOutput(true);
             httpConnection.setRequestMethod("POST");
@@ -214,6 +248,9 @@ public class JavaNetURLRESTFulClient {
             outputStream.flush();
 
             if (httpConnection.getResponseCode() != 200) {
+                System.out.println("********************************************");
+                System.out.println("删除："+userStr+"，服务返回错误 不是200");
+                System.out.println("********************************************");
                 throw new RuntimeException("Failed : HTTP error code : "
                         + httpConnection.getResponseCode());
             }
@@ -228,10 +265,18 @@ public class JavaNetURLRESTFulClient {
                 JSONObject object = JSONObject.parseObject(output);
                 String m=object.getString("message");
                 System.out.println(m);
-                if("Succeed".equals(m))
+                if("Succeed".equals(m)) {
+                    System.out.println("********************************************");
+                    System.out.println("删除："+userStr+"成功");
+                    System.out.println("********************************************");
                     return true;
-                else
+                }
+                else {
+                    System.out.println("********************************************");
+                    System.out.println("删除："+userStr+"失败");
+                    System.out.println("********************************************");
                     return false;
+                }
             }
 
             httpConnection.disconnect();
@@ -243,17 +288,19 @@ public class JavaNetURLRESTFulClient {
 
             e.printStackTrace();
 
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return false;
     }
     public List<User> get_join_day(String token,long day)
     {
-        List<User> user= get_user(token);
+        List<User> user= get_user(token);//获得所有的数据库账号
         Date currentday = new Date((new Date()).getTime()-day*24*60*60*1000L);
         List<User> userd=new ArrayList<>();
         for (User u:user)
         {
-            if(currentday.compareTo(u.getJoinDate())<0)
+            if(currentday.compareTo(u.getJoinDate())<0)//获取比day天后的所有账号
             {
                 userd.add(u);
             }
@@ -261,11 +308,11 @@ public class JavaNetURLRESTFulClient {
         return userd;
     }
     public static void main(String[] args) throws ParseException {
-        Date current= new Date();
+   /*       Date current= new Date();
         Date current7day = new Date((new Date()).getTime()+7*24*60*60*1000);
         System.out.print(current7day.compareTo(current));
-        System.out.print(current7day);
-  /*      JavaNetURLRESTFulClient c= new JavaNetURLRESTFulClient();
+        System.out.print(current7day);*/
+      JavaNetURLRESTFulClient c= new JavaNetURLRESTFulClient();
         String token = c.get_token();
         List<User> user= c.get_user(token);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -280,7 +327,7 @@ public class JavaNetURLRESTFulClient {
                 else
                     System.out.println("fail");
             }
-        }*/
+        }
 
     }
 }

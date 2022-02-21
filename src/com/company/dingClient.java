@@ -10,6 +10,7 @@ import com.dingtalk.api.request.OapiProcessinstanceListidsRequest;
 import com.dingtalk.api.response.OapiGettokenResponse;
 import com.dingtalk.api.response.OapiProcessinstanceGetResponse;
 import com.dingtalk.api.response.OapiProcessinstanceListidsResponse;
+import com.sun.jna.WString;
 import com.taobao.api.ApiException;
 
 import java.text.DateFormat;
@@ -43,7 +44,14 @@ public class dingClient {
 
         long startT=getTimestamp(d)-day*timeD;
         long endT=getTimestamp(d);
-        //System.out.println(Long.toString(startT)+" "+Long.toString(endT));//查询开始时间和结束时间
+        if(day>120)
+        {
+            endT = startT + 120*timeD;
+
+        }
+    //    DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+     //   System.out.println("从钉钉获取从"+df.format(new Date(startT))+"到"+df.format(endT));
+   //     System.out.println(Long.toString(startT)+" "+Long.toString(endT));//查询开始时间和结束时间
         req.setStartTime(startT);
         req.setEndTime(endT);
         req.setSize(10L);
@@ -63,7 +71,9 @@ public class dingClient {
             String v=j.getString("name");
             if(v.equals("客户单位名称"))
             {
-                //  System.out.println("客户单位名称"+j.getString("value"));
+                //  System.out.println("客户单位名称:"+j.getString("value"));
+                if(j.getString("value").indexOf("清远市广播电视台")>-1)
+                    System.out.println("客户单位名称:"+j.getString("value"));
                 user.setUser_name(j.getString("value"));
             }
             else if(v.equals("业务负责人"))
@@ -84,25 +94,42 @@ public class dingClient {
             {
                 //    System.out.println("备注"+j.getString("value"));
                 String remark = j.getString("value");
+
+//               if(remark.equals("hdrmtzx@tv.com"))
+//                {
+//                    System.out.println("debug");
+//                }
+
                 if(remark!=null&&remark.equals("null"))
                     remark=null;
                 //如果已经提交成功，就从最后评论中取得账号  或者remark 是错误的
                 int sum=operational.size();
                 if(sum>2) {
-                    String myremark = operational.get(sum-1).getString("remark");
-                    if(myremark!=null&&myremark.contains("@tv.com"))
-                        remark = "最后" + myremark;
+                    final String[] chinese={"倒数一","倒数二","倒数三"};
+
+                    //从最后的3条评论中找账号 后面的优先
+                    for(int i=1;i<3;i++) {
+                        String myremark = operational.get(sum - i).getString("remark");
+                        String userid = operational.get(sum - i).getString("userid");
+                        if (myremark != null && myremark.contains("@tv.com") && "0466311823845822".equals(userid))
+                        { remark = "最后评论中第"+ chinese[i] + myremark;break;}
+                    }
                 }
-                //如果已经中途，就从我的用户中
+                //如果已经中途，就从我的用户中  (如果不在最后就从头开始找我的评论)
                 if(remark==null||!remark.contains("@tv.com")) {
+                    int index=0;
+                    final String[] chinese2={"一","二","三","四","五","六","七","八","九"};
                     for(JSONObject jo:operational)
                     {
+                        index++;
                         if("0466311823845822".equals(jo.getString("userid")))
                         {
                             String myremark = jo.getString("remark");
                             if(myremark!=null&&myremark.contains("@tv.com"))
-                                remark = "我的" + myremark;
-                            if(myremark!=null&&myremark.contains("@qq.com"))
+                                remark = "我的" +chinese2[index%9]+ myremark;
+         //                 if(myremark!=null&&myremark.contains("@qq.com"))
+               //                 user.setAccount(myremark);
+                            if(myremark!=null&&myremark.contains("@TV.COM"))
                                 user.setAccount(myremark);
                         }
                     }
@@ -128,8 +155,14 @@ public class dingClient {
                 {
                     user.setAccount("4001401298@qq.com");
                 }
+                if(user.getUser_name().equals("仙桃广播电视台"))
+                {
+                    user.setAccount("xiantao@qq.com");
+                }
                 if(remark!=null){
                     remark=remark.replaceAll("\n", " ").trim();
+                    remark=remark.replaceAll("，", " ").trim();
+
                     user.setRemark(remark);
                 }else
                     user.setRemark("没有取到有效的值");
@@ -144,7 +177,7 @@ public class dingClient {
         DingTalkClient client2 = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/processinstance/get");
         OapiProcessinstanceGetRequest req2 = new OapiProcessinstanceGetRequest();
         List<User> users = new ArrayList<User>();
-        System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
+       // System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
         int index_processNe3=0;
         for(String l:listS)
         {
@@ -181,7 +214,7 @@ public class dingClient {
                 users.add(user);
             }
         }
-        System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
+     //   System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
         return users;
     }
 
@@ -190,7 +223,7 @@ public class dingClient {
         DingTalkClient client2 = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/processinstance/get");
         OapiProcessinstanceGetRequest req2 = new OapiProcessinstanceGetRequest();
         List<User> users = new ArrayList<User>();
-        System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
+     //   System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
         int index_processNe3=0;
         for(String l:listS)
         {
@@ -205,19 +238,47 @@ public class dingClient {
             List<JSONObject> objsublist = JSON.parseArray(objsub.getJSONArray("form_component_values").toJSONString(),JSONObject.class);
             List<JSONObject> operational = JSON.parseArray(objsub.getJSONArray("operation_records").toJSONString(),JSONObject.class);
             String status=objsub.getString("status");
-            //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理
-            if(6<operational.size()&&status.equals("COMPLETED"))
+            int sumoper = operational.size();
+            boolean addflag =true;
+            for(int i=sumoper-1;i>-1;i--)
+            {
+                if(operational.get(i).getString("operation_result").equals("REFUSE"))
+                    addflag=false;
+            }
+            //延长时间
+            String remarkdetails="";
+            String userid = operational.get(sumoper-1).getString("userid");
+            String remark = operational.get(sumoper-1).getString("operation_type");
+            boolean type =false;
+            if (sumoper>1&&"0466311823845822".equals(userid)&&"ADD_REMARK".equals(remark))
+            {
+                    remarkdetails = operational.get(sumoper - 1).getString("remark");
+                    if (remarkdetails.contains("extend:"))
+                        type = true;//需要延长的
+                    else if (operational.get(sumoper - 2).getString("remark")!=null&&operational.get(sumoper - 2).getString("remark").contains("extend:")) {
+                        remarkdetails = operational.get(sumoper - 2).getString("remark");
+                        type = true;//需要延长的
+                        //最后一个可能是账号因此不能用 还存在两个extend 因为前面一个是错误的
+                    }
+            }
+
+            //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理 还有拒绝的要丢弃 finish 关闭单子
+            if(6<operational.size()&&status.equals("COMPLETED")&&addflag)
             {
                 index_processNe3++;
                 User user=gerenateUser(objsublist,operational);
+                if(type)
+                    user=modified_time(user,remarkdetails.substring(7).trim());
                 user.setProcessId(l);
                 user.setDingdingId(businessId);
                 user.setStatus("2");
                 user.setResult("未在数据库找到（钉钉）");
+                user.setLast_remark(remarkdetails);
                 users.add(user);
+
             }
         }
-        System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
+        //System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
         return users;
     }
     public User modified_time(User u,String time) throws ParseException {
@@ -233,7 +294,7 @@ public class dingClient {
         DingTalkClient client2 = new DefaultDingTalkClient("https://oapi.dingtalk.com/topapi/processinstance/get");
         OapiProcessinstanceGetRequest req2 = new OapiProcessinstanceGetRequest();
         List<User> users = new ArrayList<User>();
-        System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
+        //System.out.println("钉钉中有用户:"+Integer.toString(listS.size()));
         int index_processNe3=0;
         for(String l:listS)
         {
@@ -256,7 +317,7 @@ public class dingClient {
                 result = operational.get(1).getString("operation_result");//.equals("AGREE"); 玉洁可能添加评论 导致同意的单子会在2个位置
             int type = 0;
             //单子玉洁处理完成
-            if (sumoper>1&&"195135213224684158".equals(userid)&&result.equals("AGREE")&&"RUNNING".equals(status))
+            if (sumoper>1&&"195135213224684158".equals(userid)&&operational.get(sumoper-1).getString("operation_result").equals("AGREE")&&"RUNNING".equals(status))
                 type = 1;
             //由于账号从备注没找到 我评论才找到  但是我还没同意
             if (sumoper>1&&"0466311823845822".equals(userid)&&"RUNNING".equals(status))
@@ -269,21 +330,33 @@ public class dingClient {
                 type = 5;
             //部分客户可能会需要延长时间，业务员直接在单子给出来
             String remarkdetails = "";
-            if (sumoper>1&&"0466311823845822".equals(userid)&&"ADD_REMARK".equals(remark))
+            if (sumoper>4&&"0466311823845822".equals(userid))
             {
-                remarkdetails = operational.get(sumoper-1).getString("remark");
+                if("ADD_REMARK".equals(remark)) {
+                    remarkdetails = operational.get(sumoper - 1).getString("remark");
 
-                if(remarkdetails.contains("extend:"))
-                    type = 6;//需要延长的
-                else if(operational.get(sumoper-2).getString("remark").contains("extend:")) {
-                    remarkdetails = operational.get(sumoper - 2).getString("remark");
-                    type = 6;//需要延长的
-                    //最后一个可能是账号因此不能用 还存在两个extend 因为前面一个是错误的
+                    if (remarkdetails.contains("extend:"))
+                        type = 6;//需要延长的
+                    else if (operational.get(sumoper - 2).getString("remark")!=null&&operational.get(sumoper - 2).getString("remark").contains("extend:")) {
+                        remarkdetails = operational.get(sumoper - 2).getString("remark");
+                        type = 6;//需要延长的
+                        //最后一个可能是账号因此不能用 还存在两个extend 因为前面一个是错误的
+                    } else if(remarkdetails.contains("refuse"))
+                        type = 7;
+                    else if("RUNNING".equals(status))
+                        type = 2;//需要注意最后一个评论的是不是账号问题 不含extend
+                    else
+                        type = 11;
                 }
-                else
-                    type = 7;//需要注意最后一个评论的是不是账号问题 不含extend
-            }else if (sumoper>1&&!"01194714452436466669".equals(userid)&&"COMPLETED".equals(status))//最后一个不是文总评论也不是我评论的就需要单独拉出来注意一下
+                else {
+                    type=9;//是我评论的 但是内容不是增加 而是其它东西
+                }
+            }else if (sumoper>4&&!"PROCESS_CC".equals(remark)&&"COMPLETED".equals(status))//最后一个不是文总评论也不是我评论的就需要单独拉出来注意一下
             {
+                //流程大于4个（不是中间拒绝的） 并且 最后评论不是我的都要注意一下
+          //      if("195135213224684158".equals(userid)&&operational.get(sumoper-1).getString("operation_result").equals("REFUSE"))
+          //          type = 10;
+          //      else
                     type = 8;
             }
             //如果处理流程不等于3 则意味这个单子没有到我这里来 不处理
@@ -322,11 +395,11 @@ public class dingClient {
                 user.setProcessId(l);
                 user.setDingdingId(businessId);
                 user.setStatus("8");
-                user.setResult("有延长时间要求,但是我还没有确认");
+                user.setResult("最后评论的人不是我（主要是看是不是有延长时间需求）评论内容："+remarkdetails);
                 users.add(user);
             }
         }
-        System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
+      //  System.out.println("还有"+Integer.toString(index_processNe3)+"个单我处理");
         return users;
     }
     public static Long getTimestamp(Date date){
@@ -339,6 +412,15 @@ public class dingClient {
     //1 为更新 2其它为查询
     public List<User> parseAll(String token,long day,int type) throws ApiException, ParseException {
         long curse = 0L;
+        Date d = new Date();
+        long startT=getTimestamp(d)-day*timeD;
+        long  endT = getTimestamp(d);
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        if(day>120)
+        {
+            endT = startT + 120*timeD;
+        }
+        System.out.println("从钉钉获取从"+df.format(new Date(startT))+"到"+df.format(endT));
         String sizelist = get_listId(token,curse,day);
         JSONObject object = JSONObject.parseObject(sizelist);
         JSONObject objsub = JSON.parseObject(object.getJSONObject("result").toJSONString());
@@ -369,7 +451,7 @@ public class dingClient {
         try {
             dingClient dC = new dingClient();
             String token = dC.get_access_token();
-            List<User> users = dC.parseAll(token,2,2);
+            List<User> users = dC.parseAll(token,10,1);
             users.forEach(System.out::println);
         } catch (ApiException | ParseException e) {
             e.printStackTrace();
